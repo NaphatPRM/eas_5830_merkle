@@ -45,10 +45,10 @@ def check_prime(num):
     """
         Function to check whether the number is a prime number or not.
     """
-    if num < 2 or num % 2 == 0:
-        return False
     if num == 2:
         return True
+    if num < 2 or num % 2 == 0:
+        return False
     
     ## Use the Eratos
     for i in range(3, int(math.sqrt(num)) + 1, 2):

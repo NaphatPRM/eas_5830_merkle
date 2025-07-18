@@ -26,7 +26,7 @@ def merkle_assignment():
     tree = build_merkle(leaves)
 
     # Select a random leaf and create a proof for that leaf
-    random_leaf_index = random.choice(list(range(1, num_of_primes))) #TODO generate a random index from primes to claim (0 is already claimed)
+    random_leaf_index = random.randint(1, num_of_primes - 1) #TODO generate a random index from primes to claim (0 is already claimed)
     proof = prove_merkle(tree, random_leaf_index)
 
     # This is the same way the grader generates a challenge for sign_challenge()
@@ -93,8 +93,7 @@ def build_merkle(leaves):
     """
 
     #TODO YOUR CODE HERE
-    tree = []
-    tree.append(leaves)
+    tree = [leaves]
     count_leaves = len(leaves)
     list_prev = leaves
     while count_leaves > 1:
@@ -135,7 +134,6 @@ def sign_challenge(challenge):
         claimed a prime
     """
     acct = get_account()
-
     addr = acct.address
     eth_sk = acct.key
 
@@ -159,8 +157,25 @@ def send_signed_msg(proof, random_leaf):
     w3 = connect_to(chain)
 
     # TODO YOUR CODE HERE
-    contract = w3.eth.contract(address=address, abi=abi)
-    tx_hash = contract.functions.submit(proof, random_leaf)
+    # Define the gas
+    nonce = w3.eth.get_transaction_count(acct.address)
+    gas_price = w3.eth.gas_price  # or use to_wei('5', 'gwei') if needed
+    gas_limit = 100_000
+    # Making the transaction
+    contract = w3.eth.contract(address=Web3.to_checksum_address(address), abi=abi)
+    txn = contract.functions.submit(proof, random_leaf).build_transaction({
+        'from': acct.address,
+        'nonce': nonce,
+        'gas': gas_limit,
+        'gasPrice': gas_price,
+    })
+
+    # Sign the transaction
+    signed_txn = w3.eth.account.sign_transaction(txn, private_key=acct.key)
+
+    # Send the transaction
+    tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+    print("Transaction sent! Tx hash:", w3.to_hex(tx_hash))
 
     return tx_hash
 
